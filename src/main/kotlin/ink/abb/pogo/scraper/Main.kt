@@ -30,18 +30,19 @@ fun getAuth(settings: Settings, http: OkHttpClient): CredentialProvider {
 
     val auth = if (username.contains('@')) {
         if (token.isBlank()) {
-            GoogleCredentialProvider(http, object : GoogleCredentialProvider.OnGoogleLoginOAuthCompleteListener {
-                override fun onInitialOAuthComplete(googleAuthJson: GoogleAuthJson?) {
-                }
+            val provider = GoogleUserCredentialProvider(http, time)
+            Log.magenta("Please go to the following link to acquire an authorisation code: ${GoogleUserCredentialProvider.LOGIN_URL}")
+            Log.magenta("Please enter the code here:")
+            val input = Scanner(System.`in`)
+            val code = input.nextLine()
+            provider.login(code)
 
-                override fun onTokenIdReceived(googleAuthTokenJson: GoogleAuthTokenJson) {
-                    Log.normal("Setting Google refresh token in your config")
-                    settings.setToken(googleAuthTokenJson.refreshToken)
-                    settings.writeProperty("config.properties", "token")
-                }
-            }, time)
+            Log.normal("Setting Google refresh token in your config")
+            settings.setToken(provider.refreshToken)
+            settings.writeProperty("config.properties", "token")
+            provider
         } else {
-            GoogleCredentialProvider(http, token, time)
+            GoogleUserCredentialProvider(http, token, time)
         }
     } else {
         try {
